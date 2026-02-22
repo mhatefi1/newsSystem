@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  analyzer:
+    image: amazoncorretto:8-alpine-jdk
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: sh -c "javac analyzer/src/main/java/com/jiring/analyzer/*.java && java -cp analyzer/src/main/java com.jiring.analyzer.NewsAnalyzer"
+    ports:
+      - "8657:8657"
+    networks:
+      - news-network
+
+  feed:
+    image: amazoncorretto:8-alpine-jdk
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - ANALYZER_HOST=analyzer
+      - FEED_FREQUENCY=1000
+    command: sh -c "javac feed/src/main/java/com/jiring/feed/*.java && java -Dfeed.frequency=$$FEED_FREQUENCY -cp feed/src/main/java com.jiring.feed.MockNewsFeed"
+    depends_on:
+      - analyzer
+    networks:
+      - news-network
+    deploy:
+      replicas: 3
+
+networks:
+  news-network:
+    driver: bridge
